@@ -16,6 +16,7 @@ class Habito {
   };
 
   final String id;
+  final String usuario;
   final String nombre;
   final String color; //Nombre del color 'Azul' porque un texto sí se puede pasar a JSON
   final String icono; //Nombre del icono 'Agua' por el mismo motivo
@@ -23,6 +24,7 @@ class Habito {
 
   Habito({
     required this.id,
+    required this.usuario,
     required this.nombre,
     required this.color,
     required this.icono,
@@ -33,6 +35,7 @@ class Habito {
   Map<String, dynamic> toJson() { //convierte el habito en un map
     return {
       'id': id,
+      'usuario': usuario,
       'nombre': nombre,
       'color': color,
       'icono': icono,
@@ -44,6 +47,7 @@ class Habito {
   factory Habito.fromJson(Map<String, dynamic> json) { //recibe un map, el que sale de jsondecode, y crea un habito sacando el valor por su clave
     return Habito(
       id: json['id'],
+      usuario: json['usuario'],
       nombre: json['nombre'],
       color: json['color'],
       icono: json['icono'],

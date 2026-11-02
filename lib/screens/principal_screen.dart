@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import '../models/usuario.dart';
 import '../models/habito.dart';
 import '../services/preferencias_service.dart';
-import '../widgets/habito_tile.dart';
+import '../widgets/tarjeta_habito.dart';
 import 'habito_form_screen.dart';
 import 'estadisticas_screen.dart';
 import 'ajustes_screen.dart';
+import 'login_screen.dart';
 //widgets y las clases necesarias
 
 class PrincipalScreen extends StatefulWidget { //stateful porque cambia
-  final String nombre; //devuelve el nombre que se ha puesto
-  final int objetivo; //y el objetivo que el usuario a escogido
-  const PrincipalScreen({super.key, required this.nombre, required this.objetivo}); //constructor, la principal screen necesita si o si el nombre y objetivo para cargar
+  final Usuario usuario;
+  const PrincipalScreen({super.key, required this.usuario});
 
   @override
   State<PrincipalScreen> createState() => _PrincipalScreenState(); //variables
@@ -30,7 +31,7 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
   }
 
   Future<void> cargarDatos() async {
-    habitos = await servicio.leerHabitos();
+    habitos = await servicio.leerHabitosDe(widget.usuario.usuario);
     ocultarCompletados = await servicio.leerOcultarCompletados();
     //lee los habitos y el boolean de ocultar completados con el servicio
     if (!mounted) return;
@@ -57,7 +58,7 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
     } else {
       habito.fechasCompletadas.remove(hoy); //si se desmarca, se quita la fecha de la lista
     }
-    await servicio.guardarHabitos(habitos); //guarda la lista entera con los cambios
+    await servicio.guardarHabitosDe(widget.usuario.usuario, habitos); //guarda la lista entera con los cambios
     if (!mounted) return;
     //comprueba si la pantalla sigue abierta
     setState(() {});
@@ -65,8 +66,21 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
   }
 
   Future<void> borrar(Habito habito) async {
+    //Antes de borrar se pide confirmación. La ventana devuelve true (Eliminar) o false (Cancelar) con Navigator.pop
+    bool? confirmado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('¿Eliminar "${habito.nombre}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar')),
+        ],
+      ),
+    );
+    if (confirmado != true) return; //si no se ha pulsado Eliminar, no se borra nada
+
     habitos.remove(habito); //coge el habito, si se ha borrado, lo quita de la lista
-    await servicio.guardarHabitos(habitos); //se guarda la lista de habitos con los cambios
+    await servicio.guardarHabitosDe(widget.usuario.usuario, habitos); //se guarda la lista de habitos con los cambios
     if (!mounted) return;
     //comprueba si la pantalla sigue abierta
     setState(() {});
@@ -77,7 +91,7 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
     final Habito? resultado = await Navigator.push<Habito>( //navega a la pantalla del habito seleccionado, en este caso
       //espera a que devuelvas el editor, lo que devuelva el editor con "navigator.pop" , se guarda en resultado
       context,
-      MaterialPageRoute(builder: (context) => HabitoFormScreen(habito: habito)),//se le indica que el editor devuelve un habito
+      MaterialPageRoute(builder: (context) => HabitoFormScreen(habito: habito, usuario: widget.usuario.usuario)),//se le indica que el editor devuelve un habito
     );
     if (resultado == null) return; //si el editor no devuelve nada, volver atras
 
@@ -87,7 +101,7 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
     } else {
       habitos[posicion] = resultado; //si existe, lo sustituye por su version editada
     }
-    await servicio.guardarHabitos(habitos); //guarda la lista de habitos con los cambios
+    await servicio.guardarHabitosDe(widget.usuario.usuario, habitos); //guarda la lista de habitos con los cambios
     if (!mounted) return;
     setState(() {});
     //se redibuja la pantalla
@@ -100,14 +114,24 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
     //se redibuja la pantalla con los datos
   }
 
+  //Cerrar sesión: vuelve al login y quita todas las pantallas anteriores (no se puede volver atrás)
+  void cerrarSesion() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold( //estructura de la pantalla
       appBar: AppBar( //barra de arriba
         title: const Text('HabitosApp'), //el titulo de la barra de arriba
         actions: [
-          IconButton(icon: const Icon(Icons.bar_chart), onPressed: () => abrir(const EstadisticasScreen())), //icono
+          IconButton(icon: const Icon(Icons.bar_chart), onPressed: () => abrir(EstadisticasScreen(usuario: widget.usuario.usuario))), //icono
           IconButton(icon: const Icon(Icons.settings), onPressed: () => abrir(const AjustesScreen())), //icono
+          IconButton(icon: const Icon(Icons.logout), onPressed: cerrarSesion), //icono para cerrar sesión
         ],
       ),
       body: SingleChildScrollView( //scroll unico
@@ -120,31 +144,40 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
               const Icon(Icons.waving_hand, size: 60, color: Colors.amber), //icono de mano saludando
               const SizedBox(height: 8), //hueco de 8px
               Text(
-                'Hola, ${widget.nombre}', //texto de hola "nombre"
+                'Hola, ${widget.usuario.usuario}', //texto de hola "nombre"
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
-                'Objetivo diario: ${widget.objetivo} hábitos', //en un hueco de 8px, se muestra "objetivo diario, habitos"
+                'Objetivo diario: ${widget.usuario.objetivo} hábitos', //en un hueco de 8px, se muestra "objetivo diario, habitos"
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 18),
               ),
               Text(
-                'Hoy llevas ${contarHechos()} de ${widget.objetivo} hábitos',
+                'Hoy llevas ${contarHechos()} de ${widget.usuario.objetivo} hábitos',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 18),
               ),
               const SizedBox(height: 24), //24px
+              //Mensaje si todavía no hay hábitos
+              if (habitos.isEmpty)
+                const Text(
+                  'Todavía no tienes hábitos. Pulsa "Crear hábito" para añadir uno.',
+                  textAlign: TextAlign.center,
+                ),
               for (Habito h in habitos) //una ficha para cada habito
                 if (!ocultarCompletados || !hechoHoy(h)) //solo se muestra si ocultar esta desacticado o no esta hecho hoy
-                  HabitoTile( //ficha de cada habito
-                    habito: h,
-                    hecho: hechoHoy(h),
-                    alMarcar: (valor) => marcar(h, valor),
+                  TarjetaHabito( //ficha de cada habito
+                    nombre: h.nombre,
+                    color: Habito.colores[h.color]!,
+                    completado: hechoHoy(h),
+                    icono: Habito.iconos[h.icono]!,
+                    alCompletar: () => marcar(h, !hechoHoy(h)), //si no estaba hecho lo marca, y si lo estaba lo desmarca
                     alEditar: () => abrirEditor(h),
-                    alBorrar: () => borrar(h),
+                    alEliminar: () => borrar(h),
                   ),
+              const SizedBox(height: 80), //hueco para que el botón flotante no tape la última ficha
             ],
           ),
         ),

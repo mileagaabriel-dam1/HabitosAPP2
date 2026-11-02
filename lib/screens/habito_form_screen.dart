@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../models/habito.dart';
+import '../widgets/campo_texto_app.dart';
+import '../widgets/boton_principal.dart';
 
 //EDITAR HÁBITO: cambia nombre y color (o crea uno si recibe null).
 //No guarda: devuelve el resultado con Navigator.pop y la principal lo guarda.
 class HabitoFormScreen extends StatefulWidget {
   final Habito? habito;
-  const HabitoFormScreen({super.key, required this.habito});
+  final String usuario;
+  const HabitoFormScreen({super.key, required this.habito, required this.usuario});
 
   @override
   State<HabitoFormScreen> createState() => _HabitoFormScreenState();
@@ -45,7 +48,7 @@ class _HabitoFormScreenState extends State<HabitoFormScreen> {
     }
     Navigator.pop(
       context,
-      Habito(id: id, nombre: nombreController.text, color: colorElegido, icono: iconoElegido, fechasCompletadas: fechas),
+      Habito(id: id, usuario: widget.usuario, nombre: nombreController.text, color: colorElegido, icono: iconoElegido, fechasCompletadas: fechas),
     );
   }
 
@@ -71,18 +74,15 @@ class _HabitoFormScreenState extends State<HabitoFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Editar hábito')), //Su flecha vuelve sin resultado (null)
+      appBar: AppBar(title: Text(widget.habito == null ? 'Crear hábito' : 'Editar hábito')), //Su flecha vuelve sin resultado (null)
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextField(
-                controller: nombreController,
-                decoration: const InputDecoration(labelText: 'Nombre del hábito', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 20),
+              CampoTextoApp(etiqueta: 'Nombre del hábito', controller: nombreController),
+              const SizedBox(height: 4),
               //Los tres botones de icono, en una Row
               Row(
                 children: [
@@ -105,13 +105,11 @@ class _HabitoFormScreenState extends State<HabitoFormScreen> {
               const SizedBox(height: 8),
               Text('Seleccionado: $colorElegido'),
               const SizedBox(height: 20),
-              Row(
-                children: [
-                  ElevatedButton(onPressed: guardar, child: const Text('Guardar')),
-                  const SizedBox(width: 10),
-                  //Cancelar: vuelve sin resultado (null), así no se cambia nada
-                  ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-                ],
+              BotonPrincipal(texto: 'Guardar', alPulsar: guardar),
+              const SizedBox(height: 10),
+              //Cancelar: vuelve sin resultado (null), así no se cambia nada
+              Center(
+                child: TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
               ),
             ],
           ),

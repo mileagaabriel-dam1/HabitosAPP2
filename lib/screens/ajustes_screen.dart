@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../main.dart'; //Para avisar a la app de que cambie el tema y la letra
 import '../services/preferencias_service.dart';
-import 'bienvenida_screen.dart';
 
-//AJUSTES: tema, tamaño de letra, ocultar completados y borrar datos
+//AJUSTES: tema, tamaño de letra y ocultar completados
 class AjustesScreen extends StatefulWidget {
   const AjustesScreen({super.key});
 
@@ -54,32 +53,6 @@ class _AjustesScreenState extends State<AjustesScreen> {
     await servicio.guardarOcultarCompletados(valor);
   }
 
-  //PERSISTENCIA: pide confirmación, borra todo y vuelve a la bienvenida
-  Future<void> borrarDatos() async {
-    //La ventana devuelve true (Borrar) o false (Cancelar) con Navigator.pop
-    bool? confirmado = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('¿Borrar todos los datos?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Borrar')),
-        ],
-      ),
-    );
-    if (confirmado != true) return;
-
-    await servicio.borrarTodo();
-    if (!mounted) return;
-    HabitosApp.recargarAjustes(context); //Tema y letra vuelven a sus valores por defecto
-    //Va a la bienvenida y quita todas las pantallas anteriores (no se puede volver atrás)
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const BienvenidaScreen()),
-          (route) => false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,8 +73,6 @@ class _AjustesScreenState extends State<AjustesScreen> {
                 value: ocultarCompletados,
                 onChanged: cambiarOcultar,
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(onPressed: borrarDatos, child: const Text('Borrar datos')),
             ],
           ),
         ),

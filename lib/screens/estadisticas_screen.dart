@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/habito.dart';
 import '../services/preferencias_service.dart';
+import '../widgets/dato_estadistica.dart';
 
 class EstadisticasScreen extends StatefulWidget { //stateful porque habran cambios
-  const EstadisticasScreen({super.key});
+  final String usuario;
+  const EstadisticasScreen({super.key, required this.usuario});
 
   @override
   State<EstadisticasScreen> createState() => _EstadisticasScreenState();
@@ -24,7 +26,7 @@ class _EstadisticasScreenState extends State<EstadisticasScreen> {
   Future<void> cargarDatos() async {
     aperturas = await servicio.leerAperturas() ?? 0; //espera a tener el dato de aperturas para leerlo
     ultimaApertura = await servicio.leerUltimaApertura() ?? ''; //espera para leerlo
-    habitos = await servicio.leerHabitos(); //espera para leerlo
+    habitos = await servicio.leerHabitosDe(widget.usuario); //espera para leerlo
     if (!mounted) return;
     //comprueba si la pagina sigue abierta
     setState(() {});
@@ -54,11 +56,36 @@ class _EstadisticasScreenState extends State<EstadisticasScreen> {
               Text('Veces abierta: $aperturas'), //las veces que se ha abierto la app, lo mete en la variable correspondiente
               Text('Última apertura: $ultimaApertura'), //lo mismo con el dato de ultima apertura
               const SizedBox(height: 16), //hueco de 16px
-              //Total = cuántas fechas tiene su lista (.length)
+              if (habitos.isEmpty) const Text('Todavía no hay hábitos.'),
+              //Una tarjeta por hábito: el nombre arriba y sus dos datos debajo, así se ve a qué hábito pertenece cada dato
               for (Habito h in habitos)
-                ListTile(
-                  title: Text(h.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Racha: ${racha(h)} días - Total: ${h.fechasCompletadas.length} días'),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Text(h.nombre, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            DatoEstadistica(
+                              etiqueta: 'Racha actual',
+                              valor: '${racha(h)} días',
+                              icono: Icons.local_fire_department,
+                              color: Colors.orange,
+                            ),
+                            //Total = cuántas fechas tiene su lista (.length)
+                            DatoEstadistica(
+                              etiqueta: 'Días completados',
+                              valor: '${h.fechasCompletadas.length}',
+                              icono: Icons.check_circle,
+                              color: Colors.green,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
             ],
           ),

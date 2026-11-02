@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart'; //traemos los botones, textos, pantallas...
 import 'services/preferencias_service.dart'; //llamamos a servicio, el que lee y guarda
-import 'screens/bienvenida_screen.dart'; //llamamos a la pantalla de bienvenida para mostrarla
-import 'screens/principal_screen.dart'; //y llamamos a la principal para mostrarla
+import 'screens/login_screen.dart';
 
 void main() { //lo primero que se ejecuta
   WidgetsFlutterBinding.ensureInitialized(); //se prepara para poder guardar datos
@@ -22,8 +21,6 @@ class HabitosApp extends StatefulWidget { //stateful porque la app cambia, prime
 class _HabitosAppState extends State<HabitosApp> {
   PreferenciasService servicio = PreferenciasService(); //se usa para leer y guardar
   bool cargando = true; //empieza en true, porque al abrir aun no se ha abierto nada
-  String? nombre; //null si es la primera vez
-  int objetivo = 0; //int para objetivo
   bool temaOscuro = false; //boolean para el tema
   double tamanoLetra = 1.0; //y un double para el tamaño de letra, ya que puede ser decimal
 
@@ -38,11 +35,9 @@ class _HabitosAppState extends State<HabitosApp> {
     await servicio.guardarAperturas(aperturas + 1);
     await servicio.guardarUltimaApertura(DateTime.now().toString().substring(0, 16)); //guarda la fecha y hora
 
-    nombre = await servicio.leerNombre();
-    objetivo = await servicio.leerObjetivo() ?? 0;
     temaOscuro = await servicio.leerTemaOscuro();
     tamanoLetra = await servicio.leerTamanoLetra();
-    //se leen los cuatro datos guardados y se meten en las variables (await porque espera a tenerlo)
+    //se leen los dos datos guardados y se meten en las variables (await porque espera a tenerlo)
 
     if (!mounted) return; //comprueba que la app sigue abierta despues de la espera
     setState(() {
@@ -60,8 +55,7 @@ class _HabitosAppState extends State<HabitosApp> {
 
   Widget pantallaInicial() { //pantalla inicial
     if (cargando) return const Scaffold(body: Center(child: CircularProgressIndicator())); //si esta cargando, el circulito
-    if (nombre == null) return const BienvenidaScreen(); //si el nombre es null, devolver la pantalla de bienvenida
-    return PrincipalScreen(nombre: nombre!, objetivo: objetivo); //si hay nombre y objetivo, devolver la pantalla de principal
+    return const LoginScreen();
   }
 
   @override
@@ -77,7 +71,7 @@ class _HabitosAppState extends State<HabitosApp> {
         //pero cambia algo, que es el tamaño de letra, y el textscaler, multiplica el tamaño de todos los textos por el numero elegido
         child: child!, //mete la pantalla child dentro de mediaQuery, para que los textos de esa, usen los tamaños asignados
       ),
-      home: pantallaInicial(), //home segun la pantalla que carga (bienvenida o principal)
+      home: pantallaInicial(), //home segun la pantalla que carga
     );
   }
 }
