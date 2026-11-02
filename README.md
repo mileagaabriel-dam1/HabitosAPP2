@@ -1,17 +1,9 @@
-# persistencialocal
+# HábitosApp – Interfaces y componentes
 
-A new Flutter project.
+Práctica ACT02 de Disseny d'interfícies (DAM2). Continuación de HábitosApp de Acceso a Datos: he completado las pantallas y la navegación y he creado componentes reutilizables.
 
-## Getting Started
+**Pantallas:** inicio de sesión, registro, lista de hábitos, crear/editar hábito, estadísticas, ajustes y administración (solo admin).
 
-This project is a starting point for a Flutter application.
+**Componentes (`lib/widgets`):** `CampoTextoApp`, `BotonPrincipal`, `TarjetaHabito` y `DatoEstadistica`.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+**Probarla:** `flutter pub get` y `flutter run`. Administrador: `admin` / `admin`.
