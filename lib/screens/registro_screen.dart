@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/usuario.dart';
-import '../services/preferencias_service.dart';
+import '../services/base_datos_service.dart';
 import '../widgets/campo_texto_app.dart';
 import '../widgets/boton_principal.dart';
 
@@ -13,8 +13,11 @@ class RegistroScreen extends StatefulWidget {
 }
 
 class _RegistroScreenState extends State<RegistroScreen> {
-  PreferenciasService servicio = PreferenciasService();
+  BaseDatosService bd = BaseDatosService();
   TextEditingController usuarioController = TextEditingController();
+  TextEditingController nombreController = TextEditingController();
+  TextEditingController apellidosController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
   TextEditingController contrasenaController = TextEditingController();
   TextEditingController objetivoController = TextEditingController();
   String mensaje = '';
@@ -22,6 +25,9 @@ class _RegistroScreenState extends State<RegistroScreen> {
   @override
   void dispose() {
     usuarioController.dispose();
+    nombreController.dispose();
+    apellidosController.dispose();
+    emailController.dispose();
     contrasenaController.dispose();
     objetivoController.dispose();
     super.dispose();
@@ -32,24 +38,27 @@ class _RegistroScreenState extends State<RegistroScreen> {
     String nombre = usuarioController.text;
     String contrasena = contrasenaController.text;
     int? objetivo = int.tryParse(objetivoController.text); //null si no es un número
-    if (nombre.isEmpty || contrasena.isEmpty || objetivo == null) {
-      setState(() => mensaje = 'Rellena todos los campos (el objetivo es un número)');
+    if (nombre.isEmpty || contrasena.isEmpty || nombreController.text.isEmpty || emailController.text.isEmpty || objetivo == null) {
+      setState(() => mensaje = 'Rellena usuario, nombre, email y contraseña (el objetivo es un número)');
       return;
     }
 
-    //PERSISTENCIA: el nombre de usuario no se puede repetir
-    if (await servicio.buscarUsuario(nombre) != null) {
+    //BASE DE DATOS: el nombre de usuario no se puede repetir (es la clave primaria)
+    if (await bd.buscarUsuario(nombre) != null) {
       setState(() => mensaje = 'Ese usuario ya existe');
       return;
     }
 
-    //PERSISTENCIA: guarda el usuario. La fecha de creación se pone sola (hoy)
-    await servicio.guardarUsuario(Usuario(
+    //BASE DE DATOS: inserta la fila. La fecha de creación se pone sola (hoy) y el rol siempre es usuario
+    await bd.insertarUsuario(Usuario(
       usuario: nombre,
+      nombre: nombreController.text,
+      apellidos: apellidosController.text,
+      email: emailController.text,
       contrasena: contrasena,
       objetivo: objetivo,
-      esAdmin: false,
       fechaCreacion: DateTime.now().toString().substring(0, 10),
+      rol: 'usuario',
     ));
 
     if (!mounted) return;
@@ -67,6 +76,9 @@ class _RegistroScreenState extends State<RegistroScreen> {
           child: Column(
             children: [
               CampoTextoApp(etiqueta: 'Usuario', controller: usuarioController),
+              CampoTextoApp(etiqueta: 'Nombre', controller: nombreController),
+              CampoTextoApp(etiqueta: 'Apellidos', controller: apellidosController),
+              CampoTextoApp(etiqueta: 'Email', controller: emailController),
               CampoTextoApp(etiqueta: 'Contraseña', controller: contrasenaController, ocultar: true),
               CampoTextoApp(etiqueta: 'Objetivo diario (nº de hábitos)', controller: objetivoController),
               if (mensaje.isNotEmpty) Text(mensaje, style: const TextStyle(color: Colors.red)),

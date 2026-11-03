@@ -15,7 +15,7 @@ class Habito {
     //iconos que se pueden escoger al crear un habito
   };
 
-  final String id;
+  final int? id; //null mientras no está guardado: el número lo pone la base de datos al insertarlo (AUTOINCREMENT)
   final String usuario;
   final String nombre;
   final String color; //Nombre del color 'Azul' porque un texto sí se puede pasar a JSON
@@ -32,26 +32,27 @@ class Habito {
     //lo que necesita un habito
   });
 
-  Map<String, dynamic> toJson() { //convierte el habito en un map
+  Map<String, dynamic> toMap() { //convierte el habito en un map, para insertarlo o actualizarlo en la tabla habitos
     return {
       'id': id,
       'usuario': usuario,
       'nombre': nombre,
       'color': color,
       'icono': icono,
-      'fechasCompletadas': fechasCompletadas,
+      'fechas': fechasCompletadas.join(','), //una columna no puede guardar una lista: se guarda como texto separado por comas "2026-10-30,2026-10-31"
       //a la izquierda la clave y a la derecha el valor que corresponde a esa clave
     };
   }
 
-  factory Habito.fromJson(Map<String, dynamic> json) { //recibe un map, el que sale de jsondecode, y crea un habito sacando el valor por su clave
+  factory Habito.fromMap(Map<String, dynamic> map) { //recibe un map, el de una fila leída de la tabla, y crea un habito sacando el valor por su clave
+    String fechas = map['fechas'];
     return Habito(
-      id: json['id'],
-      usuario: json['usuario'],
-      nombre: json['nombre'],
-      color: json['color'],
-      icono: json['icono'],
-      fechasCompletadas: List<String>.from(json['fechasCompletadas']),
+      id: map['id'],
+      usuario: map['usuario'],
+      nombre: map['nombre'],
+      color: map['color'],
+      icono: map['icono'],
+      fechasCompletadas: fechas.isEmpty ? [] : fechas.split(','), //split corta el texto por las comas. Si está vacío, lista vacía ("".split daría [""])
       //valores que contiene un habito
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/usuario.dart';
-import '../services/preferencias_service.dart';
+import '../services/base_datos_service.dart';
 import '../widgets/campo_texto_app.dart';
 import '../widgets/boton_principal.dart';
 import 'registro_screen.dart';
@@ -16,18 +16,12 @@ class LoginScreen extends StatefulWidget { //stateful porque tiene que recordar 
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  PreferenciasService servicio = PreferenciasService(); //servicio para leer y guardar datos
+  BaseDatosService bd = BaseDatosService(); //servicio de la base de datos, para leer y guardar datos
   //La pantalla crea los controllers y se los pasa a CampoTextoApp
   TextEditingController usuarioController = TextEditingController();
   TextEditingController contrasenaController = TextEditingController();
   //controller por campo para leer el texto escrito
   String mensaje = ''; //Mensaje de error. Vacío = no se muestra
-
-  @override
-  void initState() {
-    super.initState();
-    servicio.crearAdmin(); //La primera vez crea la cuenta admin / admin
-  }
 
   @override
   void dispose() { //se ejecuta una vez al cerrar la pantalla
@@ -47,15 +41,16 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    //PERSISTENCIA: busca el usuario guardado y compara la contraseña
-    final Usuario? usuario = await servicio.buscarUsuario(nombre);
+    //BASE DE DATOS: busca el usuario en la tabla usuarios y compara la contraseña.
+    //Si no existe (nunca ha entrado), se le dice que se registre
+    final Usuario? usuario = await bd.buscarUsuario(nombre);
     if (usuario == null || usuario.contrasena != contrasena) {
-      setState(() => mensaje = 'Usuario o contraseña incorrectos');
+      setState(() => mensaje = 'Usuario o contraseña incorrectos. Si no tienes cuenta, regístrate');
       return;
     }
 
     if (!mounted) return;
-    //pushReplacement: quita el login para no volver atrás a él. El admin va a Administración
+    //pushReplacement: quita el login para no volver atrás a él. Según la columna rol: administrador → Administración, usuario → sus hábitos
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -87,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   context,
                   MaterialPageRoute(builder: (context) => const RegistroScreen()),
                 ),
-                child: const Text('¿No tienes cuenta? Regístrate'),
+                child: const Text('¿Es tu primera vez? Regístrate'),
               ),
             ],
           ),

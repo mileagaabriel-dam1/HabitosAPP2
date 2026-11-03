@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/usuario.dart';
 import '../models/habito.dart';
 import '../services/preferencias_service.dart';
+import '../services/base_datos_service.dart';
 import '../widgets/tarjeta_habito.dart';
 import 'habito_form_screen.dart';
 import 'estadisticas_screen.dart';
@@ -19,6 +20,7 @@ class PrincipalScreen extends StatefulWidget { //stateful porque cambia
 
 class _PrincipalScreenState extends State<PrincipalScreen> {
   PreferenciasService servicio = PreferenciasService(); //servicio para leer y guardar
+  BaseDatosService bd = BaseDatosService(); //base de datos: los hábitos
   List<Habito> habitos = []; //lista que mostrara los habitos
   bool ocultarCompletados = false; //un boolean para ocultar los completados, empieza como false
   String hoy = DateTime.now().toString().substring(0, 10); //la fecha de hoy
@@ -31,9 +33,9 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
   }
 
   Future<void> cargarDatos() async {
-    habitos = await servicio.leerHabitosDe(widget.usuario.usuario);
+    habitos = await bd.leerHabitosDe(widget.usuario.usuario); //solo las filas de la tabla habitos de este usuario
     ocultarCompletados = await servicio.leerOcultarCompletados();
-    //lee los habitos y el boolean de ocultar completados con el servicio
+    //lee los habitos (base de datos) y el boolean de ocultar completados (preferencias)
     if (!mounted) return;
     //comprueba que la pantalla sigue abierta
     setState(() {});
@@ -58,7 +60,7 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
     } else {
       habito.fechasCompletadas.remove(hoy); //si se desmarca, se quita la fecha de la lista
     }
-    await servicio.guardarHabitosDe(widget.usuario.usuario, habitos); //guarda la lista entera con los cambios
+    await bd.actualizarHabito(habito); //actualiza la fila de ese habito en la base de datos (y su estadistica)
     if (!mounted) return;
     //comprueba si la pantalla sigue abierta
     setState(() {});
@@ -80,7 +82,7 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
     if (confirmado != true) return; //si no se ha pulsado Eliminar, no se borra nada
 
     habitos.remove(habito); //coge el habito, si se ha borrado, lo quita de la lista
-    await servicio.guardarHabitosDe(widget.usuario.usuario, habitos); //se guarda la lista de habitos con los cambios
+    await bd.eliminarHabito(habito.id!); //borra su fila de la base de datos (y su estadistica)
     if (!mounted) return;
     //comprueba si la pantalla sigue abierta
     setState(() {});
@@ -95,16 +97,15 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
     );
     if (resultado == null) return; //si el editor no devuelve nada, volver atras
 
-    int posicion = habitos.indexWhere((h) => h.id == resultado.id); //busca en que posicion de la lista esta el habito con ese id,
-    if (posicion == -1) { //si no lo encuentra, devuelve -1
-      habitos.add(resultado); //
+    //si no tiene id es nuevo: se inserta (la base de datos le pone el id). Si tiene id, se actualiza su fila
+    if (resultado.id == null) {
+      await bd.insertarHabito(resultado);
     } else {
-      habitos[posicion] = resultado; //si existe, lo sustituye por su version editada
+      await bd.actualizarHabito(resultado);
     }
-    await servicio.guardarHabitosDe(widget.usuario.usuario, habitos); //guarda la lista de habitos con los cambios
     if (!mounted) return;
-    setState(() {});
-    //se redibuja la pantalla
+    cargarDatos();
+    //se vuelve a leer la lista de la base de datos, asi el nuevo ya tiene su id, y se redibuja
   }
 
   Future<void> abrir(Widget pantalla) async { //abre la pantalla estadisticas o ajustes, la que se le mande

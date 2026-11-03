@@ -39,8 +39,8 @@ class _HabitoFormScreenState extends State<HabitoFormScreen> {
   //GUARDAR: devuelve el hábito a la principal con pop(context, resultado)
   void guardar() {
     if (nombreController.text.isEmpty) return;
-    //Si es nuevo: id con los milisegundos actuales y sin fechas. Si no, mantiene los suyos
-    String id = DateTime.now().millisecondsSinceEpoch.toString();
+    //Si es nuevo: id null (se lo pone la base de datos al insertarlo) y sin fechas. Si no, mantiene los suyos
+    int? id;
     List<String> fechas = [];
     if (widget.habito != null) {
       id = widget.habito!.id;

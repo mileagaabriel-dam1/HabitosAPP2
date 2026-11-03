@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import '../models/usuario.dart';
 import '../services/preferencias_service.dart';
+import '../services/base_datos_service.dart';
 import '../widgets/boton_principal.dart';
 import 'editar_usuario_screen.dart';
 import 'principal_screen.dart';
 import 'estadisticas_screen.dart';
 import 'login_screen.dart';
 
-//ADMINISTRACIÓN: solo la ve el admin (el login solo la abre si esAdmin es true).
+//ADMINISTRACIÓN: solo la ve un administrador (el login solo la abre si su rol es administrador).
 //Gestiona los usuarios y, desde cada uno, sus hábitos y sus estadísticas.
 class AdministracionScreen extends StatefulWidget {
   const AdministracionScreen({super.key});
@@ -18,6 +19,7 @@ class AdministracionScreen extends StatefulWidget {
 
 class _AdministracionScreenState extends State<AdministracionScreen> {
   PreferenciasService servicio = PreferenciasService();
+  BaseDatosService bd = BaseDatosService();
   List<Usuario> usuarios = [];
 
   @override
@@ -26,9 +28,9 @@ class _AdministracionScreenState extends State<AdministracionScreen> {
     cargarDatos();
   }
 
-  //PERSISTENCIA: lee todos los usuarios
+  //BASE DE DATOS: lee todas las filas de la tabla usuarios
   Future<void> cargarDatos() async {
-    usuarios = await servicio.leerUsuarios();
+    usuarios = await bd.leerUsuarios();
     if (!mounted) return;
     setState(() {});
   }
@@ -55,18 +57,18 @@ class _AdministracionScreenState extends State<AdministracionScreen> {
     return confirmado == true;
   }
 
-  //PERSISTENCIA: borra el usuario y sus hábitos, y recarga
+  //BASE DE DATOS: borra el usuario, sus hábitos y sus estadísticas, y recarga
   Future<void> eliminarUsuario(Usuario u) async {
     if (!await confirmar('¿Eliminar a ${u.usuario} y sus hábitos?')) return;
-    await servicio.eliminarUsuario(u.usuario);
+    await bd.eliminarUsuario(u.usuario);
     cargarDatos();
   }
 
-  //PERSISTENCIA: borra todo, vuelve a crear el admin y vuelve al login
+  //Borra todo: vacía las tablas (deja solo el admin), borra los ajustes y vuelve al login
   Future<void> borrarTodo() async {
     if (!await confirmar('¿Borrar todos los datos de la app?')) return;
+    await bd.borrarTodo();
     await servicio.borrarTodo();
-    await servicio.crearAdmin();
     if (!mounted) return;
     cerrarSesion();
   }
@@ -88,15 +90,16 @@ class _AdministracionScreenState extends State<AdministracionScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(u.usuario, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('${u.nombre} ${u.apellidos} · ${u.email}'),
             Text('${u.esAdmin ? 'Administrador' : 'Usuario'} · Creado el ${u.fechaCreacion} · Objetivo: ${u.objetivo}'),
             //Wrap: como Row, pero si no caben los botones pasan a la línea de abajo
             Wrap(
               children: [
                 TextButton(onPressed: () => abrir(PrincipalScreen(usuario: u)), child: const Text('Hábitos')),
-                TextButton(onPressed: () => abrir(EstadisticasScreen(usuario: u.usuario)), child: const Text('Estadísticas')),
+                TextButton(onPressed: () => abrir(EstadisticasScreen(usuario: u.usuario, esAdmin: true)), child: const Text('Estadísticas')),
                 TextButton(onPressed: () => abrir(EditarUsuarioScreen(usuario: u)), child: const Text('Editar')),
-                //El admin no se puede eliminar a sí mismo
-                if (!u.esAdmin) TextButton(onPressed: () => eliminarUsuario(u), child: const Text('Eliminar')),
+                //La cuenta fija admin no se puede eliminar
+                if (u.usuario != 'admin') TextButton(onPressed: () => eliminarUsuario(u), child: const Text('Eliminar')),
               ],
             ),
           ],
